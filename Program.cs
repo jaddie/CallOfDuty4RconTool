@@ -4,7 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-
+using Settings = Cod4RconConsoleTool.Properties.Settings;
 namespace Cod4RconConsoleTool
 {
     class Program
@@ -18,46 +18,58 @@ namespace Cod4RconConsoleTool
         {
             try
             {
+                if (!string.IsNullOrEmpty(Settings.Default.IP.ToString()))
+                    IP = IPAddress.Parse(Settings.Default.IP);
+                if (!string.IsNullOrEmpty(Settings.Default.Port.ToString()))
+                    Port = Settings.Default.Port;
+                if (!string.IsNullOrEmpty(Settings.Default.RconPassword))
+                    RconPassword = Settings.Default.RconPassword;
+                if (!string.IsNullOrEmpty(Settings.Default.RconCommand))
+                    RconCommand = Settings.Default.RconCommand;
                 if (IP != null && Port != 0 && RconPassword != null && RconCommand != null)
                 {
-                    Console.WriteLine("Would you like to use your previous information? - Please enter yes or no");
+                    Console.WriteLine("Would you like to use your previous information?\nAs Follows:\n{0}\n{1}\n{2}\nPlease enter yes or no",IP,Port,RconPassword);
                     if (Console.ReadLine().ToLower() == "yes")
                     {
                         if (!string.IsNullOrEmpty(RconCommand))
                         {
-                            Console.WriteLine("Would you like to run the same command again? - yes or no");
+                            Console.WriteLine("Would you like to run the last used command again?\n{0} - yes or no",RconCommand);
                             if(Console.ReadLine().ToLower() == "yes")
                             {
                                 Console.WriteLine("Executing previous command...");
                                 Console.WriteLine(Rcon(IP, Port, RconPassword, RconCommand));
-                                return;
                             }
                             else
                             {
                                 Console.WriteLine("Enter command to execute");
                                 RconCommand = Console.ReadLine();
                                 Console.WriteLine(Rcon(IP, Port, RconPassword, RconCommand));
-                                return;
                             }
 
                         }
                     }
+                    else
+                    {
+                        Console.WriteLine("Enter IP");
+                        IP = IPAddress.Parse(Console.ReadLine());
+                        Console.WriteLine("Enter Port");
+                        Port = int.Parse(Console.ReadLine());
+                        Console.WriteLine("Enter RCon Password");
+                        RconPassword = Console.ReadLine();
+                        Console.WriteLine("Enter RCon Command To Run");
+                        RconCommand = Console.ReadLine();
+                        Console.WriteLine("Connecting..");
+                        Console.WriteLine(Rcon(IP, Port, RconPassword, RconCommand));
+                    }
                 }
-                    Console.WriteLine("Enter IP");
-                    IP = IPAddress.Parse(Console.ReadLine());
-                    Console.WriteLine("Enter Port");
-                    Port = int.Parse(Console.ReadLine());
-                    Console.WriteLine("Enter RCon Password");
-                    RconPassword = Console.ReadLine();
-                    Console.WriteLine("Enter RCon Command To Run");
-                    RconCommand = Console.ReadLine();
-                    Console.WriteLine("Connecting..");
-                    Console.WriteLine(Rcon(IP, Port, RconPassword, RconCommand));
                     Console.WriteLine("Command Executed, you are now at an rcon terminal\n(in english you can now just type commands to be sent directly do not put rcon at the start)\nIt will be added automaticlly for you.\nTo close the program type exitrcon");
-                    var input = "";
+                var input = "";
                     while (input.ToLower() != "exitrcon")
                     {
                         input = Console.ReadLine();
+                        if (input == "exitrcon")
+                            return;
+                        RconCommand = input;
                         Console.WriteLine(Rcon(IP, Port, RconPassword, input));
                     }
             }
@@ -69,6 +81,11 @@ namespace Cod4RconConsoleTool
             }
             finally
             {
+                Settings.Default.IP = IP.ToString();
+                Settings.Default.Port = Port;
+                Settings.Default.RconPassword = RconPassword;
+                Settings.Default.RconCommand = RconCommand;
+                Settings.Default.Save();
                 Console.WriteLine("Program finished,press enter to exit or enter r to start from the beginning again");
                 var reply = Console.ReadLine();
                 if (reply.ToLower() == "r")
