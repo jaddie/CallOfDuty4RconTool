@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Settings = Cod4RconConsoleTool.Properties.Settings;
+using System.Threading;
 namespace Cod4RconConsoleTool
 {
     class Program
@@ -13,7 +14,6 @@ namespace Cod4RconConsoleTool
         public static int Port;
         public static string RconPassword;
         public static string RconCommand;
-        public static Socket Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         static void Main(string[] args)
         {
             try
@@ -48,19 +48,19 @@ namespace Cod4RconConsoleTool
 
                         }
                     }
-                    else
-                    {
-                        Console.WriteLine("Enter IP");
-                        IP = IPAddress.Parse(Console.ReadLine());
-                        Console.WriteLine("Enter Port");
-                        Port = int.Parse(Console.ReadLine());
-                        Console.WriteLine("Enter RCon Password");
-                        RconPassword = Console.ReadLine();
-                        Console.WriteLine("Enter RCon Command To Run");
-                        RconCommand = Console.ReadLine();
-                        Console.WriteLine("Connecting..");
-                        Console.WriteLine(Rcon(IP, Port, RconPassword, RconCommand));
-                    }
+                }
+                else
+                {
+                    Console.WriteLine("Enter IP");
+                    IP = IPAddress.Parse(Console.ReadLine());
+                    Console.WriteLine("Enter Port");
+                    Port = int.Parse(Console.ReadLine());
+                    Console.WriteLine("Enter RCon Password");
+                    RconPassword = Console.ReadLine();
+                    Console.WriteLine("Enter RCon Command To Run");
+                    RconCommand = Console.ReadLine();
+                    Console.WriteLine("Connecting..");
+                    Console.WriteLine(Rcon(IP, Port, RconPassword, RconCommand));
                 }
                     Console.WriteLine("Command Executed, you are now at an rcon terminal\n(in english you can now just type commands to be sent directly do not put rcon at the start)\nIt will be added automaticlly for you.\nTo close the program type exitrcon");
                 var input = "";
@@ -101,11 +101,8 @@ namespace Cod4RconConsoleTool
         public static string Rcon(IPAddress gameServerIP, int gameServerPort, string password, string rconCommand)
         {
 
-
-            // Connect to the server
-            if(!Client.Connected)
+            Socket Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             Client.Connect(gameServerIP, gameServerPort);
-
 
             string command = "rcon " + password + " " + rconCommand;
             Byte[] bufferTemp = Encoding.ASCII.GetBytes(command);
@@ -130,11 +127,15 @@ namespace Cod4RconConsoleTool
 
             //IPEndPoint remoteIpEndPoint IPEndPoint(IPAddress.Any, 0);
             Client.Send(bufferSend, SocketFlags.None);
-
-            // Use a large recieve buffer to make sure we can take the response
-            Byte[] bufferRec = new Byte[64999];
-            Client.Receive(bufferRec);
-            String result = Encoding.ASCII.GetString(bufferRec).Replace("\0", ""); // Remove whitespace
+            string result = "";
+            Thread.Sleep(50);
+            while (Client.Available > 0)
+            {
+                // Use a large recieve buffer to make sure we can take the response
+                Byte[] bufferRec = new Byte[Client.Available];
+                Client.Receive(bufferRec);
+                result = result + Encoding.ASCII.GetString(bufferRec).Replace("????print","").Replace("\0", ""); // Remove whitespace
+            }
             return result;
 
         }
